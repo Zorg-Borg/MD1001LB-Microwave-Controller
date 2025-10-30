@@ -1,0 +1,1 @@
+GOAL is to create a imple CLI that allows for the control of a MD1001LB microwave PCB via serial commands in an arduino.
