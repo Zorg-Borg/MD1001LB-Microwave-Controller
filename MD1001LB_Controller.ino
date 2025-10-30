@@ -83,12 +83,12 @@ static const KeyDefinition kKeyMap[] = {
   {"8",             "8",                 6, 1},
   {"reheat",        "Reheat",            6, 2},
   {"9",             "9",                 6, 2},
-  {"stop",          "Stop/Clear",        7, 0},
-  {"clear",         "Stop/Clear",        7, 0},
+  {"stop",          "Stop/Clear",        7, 2},
+  {"clear",         "Stop/Clear",        7, 2},
   {"0",             "0",                 7, 1},
-  {"start",         "Start/+30 Sec",     7, 2},
-  {"start_plus30",  "Start/+30 Sec",     7, 2},
-  {"start_30s",     "Start/+30 Sec",     7, 2},
+  {"start",         "Start/+30 Sec",     7, 0},
+  {"start_plus30",  "Start/+30 Sec",     7, 0},
+  {"start_30s",     "Start/+30 Sec",     7, 0},
 };
 
 static const size_t kKeyCount = sizeof(kKeyMap) / sizeof(kKeyMap[0]);
