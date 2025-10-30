@@ -47,6 +47,12 @@ static const uint8_t kColumnPins[] = {11, 10, 12};
 static const size_t kColumnCount = sizeof(kColumnPins) / sizeof(kColumnPins[0]);
 
 // Represents a button on the microwave keypad.
+//
+// NOTE: The MD1001LB front panel shares the numeric keys with several of the
+// quick-cook presets (for example "7" is printed together with "Soften/Melt").
+// The table below reflects the wiring that has been confirmed on real control
+// boards reported by users. Commands like "press 7" therefore activate the
+// same physical switch as "press soften_melt".
 struct KeyDefinition {
   const char *command;  // Command string accepted over serial
   const char *label;    // Friendly label printed via help/list
@@ -55,26 +61,27 @@ struct KeyDefinition {
 };
 
 static const KeyDefinition kKeyMap[] = {
-  {"reheat",        "Reheat",            0, 0},
-  {"frozen_pizza",  "Frozen Pizza",      0, 1},
-  {"rice",          "Rice",              0, 2},
-  {"potato",        "Potato",            1, 0},
-  {"frozen_entree", "Frozen Entrée",     1, 1},
+  {"clock",         "Clock",             0, 0},
+  {"6",             "6",                 0, 1},
+  {"auto_cook",     "Auto Cook",         0, 2},
+  {"defrost",       "Defrost",           1, 0},
+  {"5",             "5",                 1, 1},
   {"veggie",        "Veggie",            1, 2},
-  {"clock",         "Clock",             2, 0},
-  {"timer",         "Timer",             2, 1},
-  {"soften_melt",   "Soften/Melt",       2, 2},
+  {"timer",         "Timer",             2, 0},
+  {"4",             "4",                 2, 1},
+  {"rice",          "Rice",              2, 2},
   {"power",         "Power",             3, 0},
-  {"cook_time",     "Cook Time",         3, 1},
-  {"defrost",       "Defrost",           3, 2},
-  {"1",             "1",                 4, 0},
+  {"3",             "3",                 3, 1},
+  {"potato",        "Potato",            3, 2},
+  {"cook_time",     "Cook Time",         4, 0},
   {"2",             "2",                 4, 1},
-  {"3",             "3",                 4, 2},
-  {"4",             "4",                 5, 0},
-  {"5",             "5",                 5, 1},
-  {"6",             "6",                 5, 2},
+  {"frozen_entree", "Frozen Entrée",     4, 2},
+  {"1",             "1",                 5, 1},
+  {"frozen_pizza",  "Frozen Pizza",      5, 2},
+  {"soften_melt",   "Soften/Melt",       6, 0},
   {"7",             "7",                 6, 0},
   {"8",             "8",                 6, 1},
+  {"reheat",        "Reheat",            6, 2},
   {"9",             "9",                 6, 2},
   {"stop",          "Stop/Clear",        7, 0},
   {"clear",         "Stop/Clear",        7, 0},

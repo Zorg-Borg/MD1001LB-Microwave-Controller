@@ -57,7 +57,11 @@ status
 
 Key names are lowercase tokens such as `start`, `stop`, `cook_time`, `2`, and so
 on. Run `list` to see every supported alias along with the human-readable label
-for each microwave button.
+for each microwave button. Some pads carry both a number and a quick-cook
+preset (for example, the `7` key also triggers *Soften/Melt*). The CLI exposes
+both aliases so you can address the keypad using whichever label is most
+convenient, and it also includes an explicit `auto_cook` command for the top
+right preset that previously surfaced as `rice`.
 
 ## Safety notes
 
