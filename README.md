@@ -53,6 +53,17 @@ release
 
 status
     Print the current key press state.
+
+map show
+    Print the current row/column assignment for every key.
+
+map reset
+    Restore the factory key map.
+
+map <key> <row> <column>
+    Override the matrix position used for `key`. This is useful if your
+    control board wires the keypad differently. Rows are numbered 0-7 and
+    columns 0-2.
 ```
 
 Key names are lowercase tokens such as `start`, `stop`, `cook_time`, `2`, and so

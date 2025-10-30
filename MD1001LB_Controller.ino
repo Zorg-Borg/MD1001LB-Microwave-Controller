@@ -54,7 +54,7 @@ struct KeyDefinition {
   uint8_t column;       // Index within kColumnPins
 };
 
-static const KeyDefinition kKeyMap[] = {
+static const KeyDefinition kDefaultKeyMap[] = {
   {"reheat",        "Reheat",            0, 0},
   {"frozen_pizza",  "Frozen Pizza",      0, 1},
   {"rice",          "Rice",              0, 2},
@@ -84,7 +84,9 @@ static const KeyDefinition kKeyMap[] = {
   {"start_30s",     "Start/+30 Sec",     7, 2},
 };
 
-static const size_t kKeyCount = sizeof(kKeyMap) / sizeof(kKeyMap[0]);
+static const size_t kKeyCount = sizeof(kDefaultKeyMap) / sizeof(kDefaultKeyMap[0]);
+
+static KeyDefinition g_keyMap[kKeyCount];
 
 // Serial command settings.
 static constexpr unsigned long kDefaultBaudRate = 115200;
@@ -104,6 +106,8 @@ static String g_commandBuffer;
 void processCommand(const String &line);
 void printHelp();
 void listKeys();
+void printKeyMap();
+void resetKeyMap();
 int16_t findKeyIndex(const String &command);
 void startKeyPress(int16_t keyIndex, unsigned long holdMs);
 void maintainActivePress();
@@ -118,6 +122,8 @@ void setup() {
   // Put every pin into a known high-impedance state to match the passive
   // behaviour of the original keypad.
   setAllIdle();
+
+  resetKeyMap();
 
   Serial.println(F("MD1001LB microwave keypad controller"));
   Serial.println(F("Type 'help' for a list of commands."));
@@ -227,7 +233,7 @@ void processCommand(const String &line) {
       Serial.println(F("Status: idle"));
     } else {
       Serial.print(F("Status: holding "));
-      Serial.print(kKeyMap[g_activePress.keyIndex].label);
+      Serial.print(g_keyMap[g_activePress.keyIndex].label);
       if (g_activePress.releaseDeadline == 0) {
         Serial.println(F(" (until release)"));
       } else {
@@ -236,6 +242,44 @@ void processCommand(const String &line) {
         Serial.println(F(" ms remaining)"));
       }
     }
+  } else if (cmd == F("map")) {
+    if (count < 2) {
+      Serial.println(F("ERR: map <key>|show|reset [row] [col]"));
+      return;
+    }
+    if (tokens[1] == F("show")) {
+      printKeyMap();
+      return;
+    }
+    if (tokens[1] == F("reset")) {
+      resetKeyMap();
+      Serial.println(F("OK: key map restored"));
+      return;
+    }
+    if (count < 4) {
+      Serial.println(F("ERR: map <key> <row> <col>"));
+      return;
+    }
+    int16_t index = findKeyIndex(tokens[1]);
+    if (index < 0) {
+      Serial.println(F("ERR: unknown key"));
+      return;
+    }
+    int row = tokens[2].toInt();
+    int col = tokens[3].toInt();
+    if (row < 0 || row >= static_cast<int>(kRowCount) ||
+        col < 0 || col >= static_cast<int>(kColumnCount)) {
+      Serial.println(F("ERR: row/col out of range"));
+      return;
+    }
+    g_keyMap[index].row = static_cast<uint8_t>(row);
+    g_keyMap[index].column = static_cast<uint8_t>(col);
+    Serial.print(F("OK: updated "));
+    Serial.print(g_keyMap[index].command);
+    Serial.print(F(" -> row "));
+    Serial.print(row);
+    Serial.print(F(", col "));
+    Serial.println(col);
   } else {
     Serial.print(F("ERR: unknown command '"));
     Serial.print(cmd);
@@ -252,6 +296,9 @@ void printHelp() {
   Serial.println(F("  hold <key>          Hold the key until 'release'"));
   Serial.println(F("  release             Release the currently held key"));
   Serial.println(F("  status              Print the active key state"));
+  Serial.println(F("  map show            Display the current row/column map"));
+  Serial.println(F("  map reset           Restore the default key map"));
+  Serial.println(F("  map <key> <r> <c>   Assign key to row r / column c"));
   Serial.println();
   Serial.println(F("Examples:"));
   Serial.println(F("  press start"));
@@ -263,16 +310,16 @@ void listKeys() {
   Serial.println(F("Known key commands:"));
   for (size_t i = 0; i < kKeyCount; ++i) {
     Serial.print(F("  "));
-    Serial.print(kKeyMap[i].command);
+    Serial.print(g_keyMap[i].command);
     Serial.print(F("  ("));
-    Serial.print(kKeyMap[i].label);
+    Serial.print(g_keyMap[i].label);
     Serial.println(F(")"));
   }
 }
 
 int16_t findKeyIndex(const String &command) {
   for (size_t i = 0; i < kKeyCount; ++i) {
-    if (command.equalsIgnoreCase(kKeyMap[i].command)) {
+    if (command.equalsIgnoreCase(g_keyMap[i].command)) {
       return static_cast<int16_t>(i);
     }
   }
@@ -290,8 +337,8 @@ void startKeyPress(int16_t keyIndex, unsigned long holdMs) {
   g_activePress.keyIndex = keyIndex;
   g_activePress.releaseDeadline = (holdMs == 0) ? 0 : millis() + holdMs;
 
-  uint8_t rowIndex = kKeyMap[keyIndex].row;
-  uint8_t columnIndex = kKeyMap[keyIndex].column;
+  uint8_t rowIndex = g_keyMap[keyIndex].row;
+  uint8_t columnIndex = g_keyMap[keyIndex].column;
 
   if (rowIndex >= kRowCount || columnIndex >= kColumnCount) {
     Serial.println(F("ERR: key mapping out of range"));
@@ -311,7 +358,7 @@ void startKeyPress(int16_t keyIndex, unsigned long holdMs) {
   digitalWrite(kColumnPins[columnIndex], state);
 
   Serial.print(F("OK: pressing "));
-  Serial.println(kKeyMap[keyIndex].label);
+  Serial.println(g_keyMap[keyIndex].label);
 }
 
 void maintainActivePress() {
@@ -319,8 +366,8 @@ void maintainActivePress() {
     return;
   }
 
-  uint8_t rowIndex = kKeyMap[g_activePress.keyIndex].row;
-  uint8_t columnIndex = kKeyMap[g_activePress.keyIndex].column;
+  uint8_t rowIndex = g_keyMap[g_activePress.keyIndex].row;
+  uint8_t columnIndex = g_keyMap[g_activePress.keyIndex].column;
 
   if (rowIndex >= kRowCount || columnIndex >= kColumnCount) {
     releaseActivePress();
@@ -342,7 +389,7 @@ void releaseActivePress() {
     return;
   }
 
-  uint8_t columnIndex = kKeyMap[g_activePress.keyIndex].column;
+  uint8_t columnIndex = g_keyMap[g_activePress.keyIndex].column;
   setColumnIdle(columnIndex);
 
   g_activePress.keyIndex = -1;
@@ -363,5 +410,23 @@ void setAllIdle() {
   }
   for (size_t i = 0; i < kColumnCount; ++i) {
     setColumnIdle(i);
+  }
+}
+
+void printKeyMap() {
+  Serial.println(F("Command -> row / column"));
+  for (size_t i = 0; i < kKeyCount; ++i) {
+    Serial.print(F("  "));
+    Serial.print(g_keyMap[i].command);
+    Serial.print(F(" -> "));
+    Serial.print(g_keyMap[i].row);
+    Serial.print(F(" / "));
+    Serial.println(g_keyMap[i].column);
+  }
+}
+
+void resetKeyMap() {
+  for (size_t i = 0; i < kKeyCount; ++i) {
+    g_keyMap[i] = kDefaultKeyMap[i];
   }
 }
