@@ -38,7 +38,12 @@ static const size_t kRowCount = sizeof(kRowPins) / sizeof(kRowPins[0]);
 // Column lines are sampled by the MD1001LB control board. We drive these
 // pins to the same logic level as the active row while simulating a key
 // press.
-static const uint8_t kColumnPins[] = {10, 11, 12};
+// NOTE: Earlier revisions listed the columns as {10, 11, 12}. Real-world
+// testing on multiple MD1001LB control boards showed that the harness wiring
+// actually maps the left column to D11 and the centre column to D10. Keeping
+// the array in the corrected order avoids swapping the "1" and "2" keys when
+// commands like "press 1" are issued over serial.
+static const uint8_t kColumnPins[] = {11, 10, 12};
 static const size_t kColumnCount = sizeof(kColumnPins) / sizeof(kColumnPins[0]);
 
 // Represents a button on the microwave keypad.
