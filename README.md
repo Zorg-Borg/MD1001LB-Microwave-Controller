@@ -7,15 +7,14 @@ signals that would be produced by the stock keypad.
 
 ## Hardware assumptions
 
-* The keypad is wired as an 8×3 matrix. Eight row lines are scanned by the
-  microwave control PCB, while three column lines are read as inputs.
-* The row lines from the PCB are connected to Arduino digital pins **2–9**.
+* The keypad is wired as a 7×4 matrix. Seven row lines are scanned by the
+  microwave control PCB, while four column lines are read as inputs.
+* The row lines from the PCB are connected to Arduino digital pins **2–8**.
   These pins always remain in high-impedance mode so the microwave can continue
   driving the scan signals.
 * The column lines from the PCB are connected to Arduino digital pins
-  **10–12** (from left to right they land on D11, D10, and D12 respectively).
-  When a key is simulated these pins are actively driven to the same logic
-  level that appears on the matching row line, emulating a closed switch.
+  **9–12**. When a key is simulated these pins are actively driven to the same
+  logic level that appears on the matching row line, emulating a closed switch.
 
 If your PCB revision wires the keypad differently simply update the `kRowPins`
 and `kColumnPins` arrays inside `MD1001LB_Controller.ino`.
