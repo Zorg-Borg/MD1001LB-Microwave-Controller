@@ -1,52 +1,11 @@
 #include <Arduino.h>
 
-/**
- * MD1001LB_Controller.ino
- * ------------------------
- * Implements a simple serial CLI that mirrors button presses on the
- * Midea MD1001LB microwave front panel. The Arduino replaces the
- * original membrane keypad by connecting directly to the keypad matrix
- * lines (wired to digital pins 2-12).
- *
- * The firmware exposes commands over the serial port so a host can send
- * high level button press instructions. Each command is translated into
- * a simulated bridge between the appropriate row and column line of the
- * keypad matrix.
- *
- * Assumptions about the MD1001LB keypad matrix
- * -------------------------------------------
- * The stock MD1001LB keypad is an 8x3 matrix (eight rows scanned by the
- * control board and three columns that are sensed). This sketch maps the
- * eight row lines to pins 2-9 and the three column sense lines to pins
- * 10-12. If your board uses a different ordering you can simply adjust
- * the pin definitions in the arrays below.
- *
- * Safety first: the MD1001LB control PCB expects the keypad to be a
- * passive matrix. To emulate a button press we *mirror* the electrical
- * state present on the scanned row line onto the corresponding column
- * sense line. The code always keeps the Arduino pin that is connected to
- * the row line in high impedance mode so the original controller can
- * continue toggling it. The column line is actively driven so that it
- * always matches the row line while a key is "pressed".
- */
-
-// Row lines are driven by the MD1001LB control board. They should always
-// stay in INPUT (high impedance) mode on the Arduino side.
-static const uint8_t kRowPins[] = {2, 3, 4, 5, 6, 7, 8, 9};
+static const uint8_t kRowPins[] = {2, 3, 4, 5, 6, 7, 8};
 static const size_t kRowCount = sizeof(kRowPins) / sizeof(kRowPins[0]);
 
-// Column lines are sampled by the MD1001LB control board. We drive these
-// pins to the same logic level as the active row while simulating a key
-// press.
-// NOTE: Earlier revisions listed the columns as {10, 11, 12}. Real-world
-// testing on multiple MD1001LB control boards showed that the harness wiring
-// actually maps the left column to D11 and the centre column to D10. Keeping
-// the array in the corrected order avoids swapping the "1" and "2" keys when
-// commands like "press 1" are issued over serial.
-static const uint8_t kColumnPins[] = {11, 10, 12};
+static const uint8_t kColumnPins[] = {9, 10, 11, 12};
 static const size_t kColumnCount = sizeof(kColumnPins) / sizeof(kColumnPins[0]);
 
-// Represents a button on the microwave keypad.
 struct KeyDefinition {
   const char *command;  // Command string accepted over serial
   const char *label;    // Friendly label printed via help/list
@@ -55,33 +14,47 @@ struct KeyDefinition {
 };
 
 static const KeyDefinition kKeyMap[] = {
-  {"reheat",        "Reheat",            0, 0},
-  {"frozen_pizza",  "Frozen Pizza",      0, 1},
-  {"rice",          "Rice",              0, 2},
-  {"potato",        "Potato",            1, 0},
-  {"frozen_entree", "Frozen Entrée",     1, 1},
-  {"veggie",        "Veggie",            1, 2},
-  {"clock",         "Clock",             2, 0},
-  {"timer",         "Timer",             2, 1},
-  {"soften_melt",   "Soften/Melt",       2, 2},
-  {"power",         "Power",             3, 0},
-  {"cook_time",     "Cook Time",         3, 1},
-  {"defrost",       "Defrost",           3, 2},
-  {"1",             "1",                 4, 0},
-  {"2",             "2",                 4, 1},
-  {"3",             "3",                 4, 2},
-  {"4",             "4",                 5, 0},
-  {"5",             "5",                 5, 1},
-  {"6",             "6",                 5, 2},
-  {"7",             "7",                 6, 0},
-  {"8",             "8",                 6, 1},
-  {"9",             "9",                 6, 2},
-  {"stop",          "Stop/Clear",        7, 0},
-  {"clear",         "Stop/Clear",        7, 0},
-  {"0",             "0",                 7, 1},
-  {"start",         "Start/+30 Sec",     7, 2},
-  {"start_plus30",  "Start/+30 Sec",     7, 2},
-  {"start_30s",     "Start/+30 Sec",     7, 2},
+  // --- ROW 0 ---
+  {"cook_time",   "Cook Time",     0, 0},
+  {"6",           "6",             0, 1},
+  {"clock_timer", "Clock Timer",   0, 2},
+  {"auto_cook",   "Auto Cook",     0, 3},
+
+  // --- ROW 1 ---
+  {"Start",       "Start",         1, 0},
+  {"5",           "5",             1, 1},
+  {"defrost",     "Defrost",       1, 2},
+  {"veggie",      "Veggie",        1, 3},
+
+  // --- ROW 2 ---
+  {"stop",        "Stop",          2, 0},
+  {"4",           "4",             2, 1},
+  {"test11",      "test11",        2, 2},
+  {"rice",        "Rice",          2, 3},
+
+  // --- ROW 3 ---
+  {"test13",      "test13",        3, 0},
+  {"3",           "3",             3, 1}, 
+  {"power",       "Power",         3, 2},
+  {"potato",      "Potato",        3, 3},
+
+  // --- ROW 4 ---
+  {"9",           "9",             4, 0},
+  {"2",           "2",             4, 1},
+  {"test24",      "test24",        4, 2},
+  {"Frz-entree",  "Frz. Entree",   4, 3},
+
+  // --- ROW 5 ---
+  {"8",           "8",             5, 0},
+  {"1",           "1",             5, 1},
+  {"test26",      "test26",        5, 2},
+  {"frz-pizza",   "Frz. Pizza",    5, 3},
+
+  // --- ROW 6 ---
+  {"7",           "7",             6, 0},
+  {"0",           "0",             6, 1},
+  {"soften-melt", "Soften/Melt",   6, 2},
+  {"reheat",      "reheat",        6, 3},
 };
 
 static const size_t kKeyCount = sizeof(kKeyMap) / sizeof(kKeyMap[0]);
