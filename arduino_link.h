@@ -8,7 +8,7 @@
 
 // Define DLL_EXPORT for Windows compilation
 #ifdef _WIN32
-    #ifdef BUILD_DLL
+    #ifdef BUILDING_DLL
         #define DLL_EXPORT __declspec(dllexport)
     #else
         #define DLL_EXPORT __declspec(dllimport)
@@ -23,7 +23,7 @@ extern "C" {
 #endif
 /**
  * @breif Opaque handle to a microwave controller instance.
- * using intptr_t so labVIEW can treat it as a 64-bit (or 32-bit) systems.
+ * Using intptr_t so labVIEW can treat it as a 64-bit (or 32-bit) systems.
  */
     typedef intptr_t MicrowaveHandle;
 /**
@@ -63,7 +63,7 @@ extern "C" {
  * @param handle The handle to the microwave controller instance.
  * @param time_str The time duration string (e.g., "01:30" for 1 minute and 30 seconds).
  * @param power_level The power level a percentage (0-100) counted by 10s (e.g., 10, 20, ..., 100).
- * defaults to 100 if no value is given or invalid value is given.
+ * Defaults to 100 if no value is given or invalid value is given.
  *
  * @return 0 on success, non-zero on failure.
  */
