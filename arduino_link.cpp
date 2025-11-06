@@ -2,6 +2,8 @@
 // Created by jack on 11/5/2025.
 //
 // dll functions implementations
+#define BUILDING_DLL
+
 #include "arduino_link.h"
 
 #include <iostream>
@@ -16,7 +18,7 @@
 #define ASIO_STANDALONE
 #include "lib/asio/include/asio.hpp"
 
-#define BUILDING_DLL
+
 
 // internal error codes
 #define API_SUCCESS 0
