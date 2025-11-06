@@ -2,7 +2,6 @@
 // Created by jack on 11/5/2025.
 //
 // dll functions implementations
-#define BUILDING_DLL
 
 #include "arduino_link.h"
 
@@ -14,6 +13,7 @@
 #include <sstream>
 #include <vector>
 #include <stdexcept>
+#include <functional>
 
 #define ASIO_STANDALONE
 #include "lib/asio/include/asio.hpp"
@@ -195,10 +195,82 @@ DLL_EXPORT MicrowaveHandle open_microwave_controller(const char* port_name, uint
 
     // Clear any startup text from the Arduino
     try {
-        asio::streambuf dummy_buf;
-        asio::read_until(session->port, dummy_buf, '\n');
+        // Drain any startup/banner noise and partial tokens without blocking the app,
+        // using async read with two timers: a max-total time and a quiet window.
+        auto start = std::chrono::steady_clock::now();
+        auto last_data = start;
+        const auto max_total = std::chrono::milliseconds(400);
+        const auto quiet_window = std::chrono::milliseconds(120);
+
+        asio::steady_timer max_timer(session->io);
+        asio::steady_timer quiet_timer(session->io);
+        bool done = false;
+
+        // Start the max total timer
+        max_timer.expires_after(max_total);
+        max_timer.async_wait([&](const asio::error_code& /*ec*/) {
+            if (!done) {
+                done = true;
+                asio::error_code ignore_ec;
+                session->port.cancel(ignore_ec);
+            }
+        });
+
+        // Function to (re)arm the quiet timer (recursive lambda needs std::function)
+        std::function<void()> arm_quiet;
+        arm_quiet = [&]() {
+            quiet_timer.expires_after(quiet_window);
+            quiet_timer.async_wait([&](const asio::error_code& /*ec*/) {
+                auto now = std::chrono::steady_clock::now();
+                if (done) return;
+                if (now - last_data >= quiet_window) {
+                    done = true;
+                    asio::error_code ignore_ec;
+                    session->port.cancel(ignore_ec);
+                } else {
+                    // Not quiet long enough; re-arm
+                    arm_quiet();
+                }
+            });
+        };
+        arm_quiet();
+
+        // Start continuous async drain
+        static char drain_buf[256];
+        std::function<void()> do_read;
+        do_read = [&]() {
+            if (done) return;
+            session->port.async_read_some(asio::buffer(drain_buf, sizeof(drain_buf)),
+                [&](const asio::error_code& ec, std::size_t n) {
+                    if (done) return;
+                    if (!ec && n > 0) {
+                        last_data = std::chrono::steady_clock::now();
+                        // keep draining
+                        do_read();
+                    } else if (ec == asio::error::operation_aborted) {
+                        // canceled due to timers -> finish
+                    } else if (ec) {
+                        // unexpected error; stop
+                        done = true;
+                        asio::error_code ignore_ec;
+                        session->port.cancel(ignore_ec);
+                    } else {
+                        // zero bytes without error: schedule another read
+                        do_read();
+                    }
+                });
+        };
+        do_read();
+
+        session->io.restart();
+        session->io.run(); // runs until timers cancel pending read(s)
+
+        // Send a newline to ensure the Arduino parser finalizes any partial token.
+        asio::error_code ec;
+        asio::write(session->port, asio::buffer("\n", 1), ec);
+        (void)ec;
     } catch(...) {
-        // Ignore errors, just trying to clear the buffer
+        // Ignore errors; best-effort drain only
     }
 
     // Return the session pointer cast to our integer handle type
