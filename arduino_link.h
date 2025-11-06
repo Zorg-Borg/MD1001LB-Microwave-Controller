@@ -8,7 +8,7 @@
 
 // Define DLL_EXPORT for Windows compilation
 #ifdef _WIN32
-    #ifdef BUILDING_DLL
+    #ifdef BUILD_DLL
         #define DLL_EXPORT __declspec(dllexport)
     #else
         #define DLL_EXPORT __declspec(dllimport)
