@@ -99,6 +99,8 @@ int main() {
     }
     std::cout << "Waiting 6 seconds (letting it run)..." << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(6));
+    result = send_microwave_command(handle, "press stop");
+    check_result(result, "send_microwave_command(\"press stop\")");
 
     std::cout << "\n--- Test 2: Run for 10s at 50% power ---" << std::endl;
     result = run_microwave(handle, "00:10", 50);
@@ -107,6 +109,8 @@ int main() {
     }
     std::cout << "Waiting 5 seconds..." << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(5));
+    result = send_microwave_command(handle, "press stop");
+    check_result(result, "send_microwave_command(\"press stop\")");
 
     std::cout << "\n--- Test 3: Stop mid-cook ---" << std::endl;
     result = stop_microwave(handle);
@@ -116,19 +120,26 @@ int main() {
     std::cout << "\n--- Test 4: Invalid Time String ('1:30' instead of '01:30') ---" << std::endl;
     result = run_microwave(handle, "1:30", 100);
     check_result(result, "run_microwave(\"1:30\", 100)");
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     if (result != API_ERROR_BAD_TIME_STR) {
         std::cerr << "   > Note: Expected API_ERROR_BAD_TIME_STR!" << std::endl;
+    }
+    for (int i = 0; i < 2; i++) {
+        result = send_microwave_command(handle, "press stop");
+        check_result(result, "send_microwave_command(\"press stop\")");
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     std::cout << "\n--- Test 5: Raw Command ('press 1') ---" << std::endl;
     result = send_microwave_command(handle, "press 1");
     check_result(result, "send_microwave_command(\"press 1\")");
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::seconds(5));
 
     // Clear the "1" we just pressed
     result = send_microwave_command(handle, "press stop");
     check_result(result, "send_microwave_command(\"press stop\")");
+    stop_microwave(handle);
 
 
 cleanup:

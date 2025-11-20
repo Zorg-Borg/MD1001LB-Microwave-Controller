@@ -85,8 +85,12 @@ void setColumnIdle(uint8_t columnIndex);
 void setAllIdle();
 
 void setup() {
-  Serial.begin(kDefaultBaudRate);
-  Serial.setTimeout(kSerialTimeoutMs);
+  Serial.begin(115200);
+  Serial.setTimeout(25);
+  unsigned long t0 = millis();
+  while (millis() - t0 < 250) { while (Serial.available()) Serial.read(); }
+  // now print banner
+
 
   // Put every pin into a known high-impedance state to match the passive
   // behaviour of the original keypad.

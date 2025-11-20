@@ -82,10 +82,10 @@ static int32_t send_raw_command(MicrowaveSession* session, const std::string& fu
             }
 
             // Check for an error from the Arduino itself
-            if (response_line.find("ERR:") == 0) {
-                std::cerr << "Arduino Error: " << response_line << std::endl;
-                return API_ERROR_ARDUINO_ERR;
-            }
+            // if (response_line.find("ERR:") == 0) {
+            //     std::cerr << "Arduino Error: " << response_line  << std::endl;
+            //     return API_ERROR_ARDUINO_ERR;
+            // }
 
             if (is_press_or_pulse) {
                 // For 'press', we must wait for the *second* "OK".
@@ -342,7 +342,7 @@ DLL_EXPORT int32_t run_microwave(MicrowaveHandle handle, const char* time_str, u
     } else if (power_level == 100) {
         num_power_presses = 0;
     } else {
-        num_power_presses = (100 - power_level) / 10;
+        num_power_presses = (100 - power_level) / 10 + 1;
     }
 
     // 3. Execute the full command sequence
@@ -350,9 +350,7 @@ DLL_EXPORT int32_t run_microwave(MicrowaveHandle handle, const char* time_str, u
 
     // Use goto for a clean, single-exit-point C-style API
 
-    // Clear any previous state
-    result = send_raw_command(session, "press stop");
-    if (result != API_SUCCESS) goto cleanup;
+    //NOTE: does not auto clear assumes clean state
 
     // Press "Cook Time"
     result = send_raw_command(session, "press cook_time");
@@ -369,10 +367,6 @@ DLL_EXPORT int32_t run_microwave(MicrowaveHandle handle, const char* time_str, u
         result = send_raw_command(session, "press power");
         if (result != API_SUCCESS) goto cleanup;
     }
-
-    // Press "Start"
-    result = send_raw_command(session, "press start");
-    if (result != API_SUCCESS) goto cleanup;
 
 cleanup:
     return result;

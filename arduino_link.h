@@ -4,7 +4,7 @@
 #ifndef MD1001LB_MICROWAVE_CONTROLLER_ARDUINO_LINK_H
 #define MD1001LB_MICROWAVE_CONTROLLER_ARDUINO_LINK_H
 
-#include <cstdint> // For standard integer types
+#include <stdint.h> // For standard integer types
 
 // Define DLL_EXPORT for Windows compilation
 #ifdef _WIN32
